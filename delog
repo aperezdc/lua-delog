@@ -1,0 +1,36 @@
+#! /usr/bin/env lua
+--
+-- delog.lua
+-- Copyright (C) 2016 Adrian Perez <aperez@igalia.com>
+-- Licensed under the MIT license or, at your option the Apache-2.0 license.
+--
+
+if #arg == 0 then
+   -- Use stdin/stdout
+elseif #arg == 1 then
+   io.input(arg[1])
+elseif #arg == 2 then
+   io.input(arg[1])
+   io.output(arg[2])
+else
+   io.stderr:write("Usage: delog [input [output]]")
+   os.exit(1)
+end
+
+local import_pattern = "^local%s+([%w_]*)%s*=%s*require%s*%(?%s*[\"'][%w%._]*delog[\"']%s*%)?"
+local varname = nil
+for line in io.lines() do
+   varname = line:match(import_pattern)
+   if varname then
+      io.write("--[[ " .. line .. " ]]\n")
+      break
+   end
+   io.write(line, "\n")
+end
+if not varname then
+   io.stderr:write("Warning: Input source does not use the delog module\n")
+   os.exit(0)
+end
+
+local delog_pattern = "(" .. varname .. "%.[%a]+%s*%b())"
+io.write((io.read("*a"):gsub(delog_pattern, "--[[ %1 ]]")))
